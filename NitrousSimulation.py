@@ -62,20 +62,38 @@ thrust = 0
 rocketMass = 30
 g = 9.81
 
+Error = False
+
 def initialise():
     
-    global density_v,density_l,mass_v,mass_l,A_injector,D_loss,P_tank
+    global density_v,density_l,mass_v,mass_l,A_injector,D_loss,P_tank,V_tank, temp, Error
+    try:
+        
+        V_tank = float(input("Enter the Nitrous Tank Volume in litres:"))
+        
+        temp = float(input("Enter initial Nitrous temperature in Kelvins:"))
     
-    density_v = NP.densityV(temp)
-    density_l = NP.densityL(temp)
-    mass_v = (1-oxi_fill)*V_tank*density_v
-    mass_l = oxi_fill*V_tank*density_l
-    print("Total mass:", mass_v+mass_l)
-    A_injector = math.pi*10**(-6)
-    D_loss=K/(N*A_injector)**2
-    print("hello",D_loss)
-    P_tank = NP.vapourPressure(temp)
-    # print(mass_v,mass_l)
+        V_tank = V_tank/1000
+        
+        density_v = NP.densityV(temp)
+        density_l = NP.densityL(temp)
+        mass_v = (1-oxi_fill)*V_tank*density_v
+        mass_l = oxi_fill*V_tank*density_l
+        
+        print("Total mass:", mass_v+mass_l)
+        A_injector = math.pi*10**(-6)
+        D_loss=K/(N*A_injector)**2
+        #print("hello",D_loss)
+        P_tank = NP.vapourPressure(temp)
+        # print(mass_v,mass_l)
+        
+    except:
+        
+        print("There was an error in the input.")
+        
+        Error = True
+
+    
 
 def guessZ(Z_guess):
     T_2 = ((Z_guess*mass_v)/(Z*initial_vMass))**(gamma-1)*initial_vTemp
@@ -215,6 +233,10 @@ def main():
     acceleration = []
     
     initialise()
+    
+    if Error:
+        return None
+    
     while not burnout:
         loop()
         temperature.append(temp)
