@@ -308,9 +308,9 @@ def main():
     fig.show()
     
     pylab.figure()
-    pylab.plot(xVals, thrustPlot,"r+",label="Thrust")
+    pylab.plot(xVals, yVals,"r+",label="RT_P")
     pylab.xlabel("Time/s")
-    pylab.ylabel("Thrust/N")
+    pylab.ylabel("Run Tank Pressure / bar")
     pylab.show()
     
     print("Average Thrust:", sum(thrustPlot)/len(thrustPlot))
