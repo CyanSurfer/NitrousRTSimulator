@@ -270,7 +270,8 @@ def main():
     yVals = pylab.array(yVals)
     
     
-    thrustPlot = pylab.array(thrustPlot)
+    # thrustPlot = pylab.array(thrustPlot)
+    thrustPlot = pylab.array(yVals)
     for i in range(len(thrustPlot)):
         totalImpulse+=thrustPlot[i]*time_step
         acceleration.append(thrustPlot[i]/rocket_mass[i])
@@ -304,11 +305,13 @@ def main():
     ax2=ax.twinx()
     ax2.plot(altitudeTime, pylab.array(altitude), "-b",label="altitude")
     ax2.set_ylabel("Altitude/m")
+    fig.show()
     
     pylab.figure()
     pylab.plot(xVals, thrustPlot,"r+",label="Thrust")
     pylab.xlabel("Time/s")
     pylab.ylabel("Thrust/N")
+    pylab.show()
     
     print("Average Thrust:", sum(thrustPlot)/len(thrustPlot))
     print("Altitude:", altitude[-1])
