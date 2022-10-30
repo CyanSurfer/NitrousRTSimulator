@@ -12,12 +12,15 @@ import math
 #Critical density = 452 kg m^-3
 #g_ox in g cm^-2, fuelRegression in ms^-1
 portR = 1 #2.5
-a = 0.236 #0.17
-n = 0.5
+a = 0.0766 #0.17
+n = 0.795
 length = 0.1 # 0.7
 fuel_density = 1010 #900
-throat_A =  0.000613598 #0.0000224 # 
+throat_A =  0.00012327 #0.000095 # #0.000613598 #0.0000224 # 
 v_e = 1965 #2338.664
+gamma = 1.2018
+combustion_T = 2886.92
+s_gas_constant = 300.86
 
 def g_ox(ox_flowRate):
     return ox_flowRate*10**3/(math.pi*portR**2)
@@ -30,7 +33,8 @@ def fuel_flowRate(fuelRegression):
 
 def getPC(ox_flowRate):
     mass_flow = fuel_flowRate(fuelRegression(g_ox(ox_flowRate)))+ox_flowRate
-    p_c = 0.5*mass_flow*math.sqrt(1.15*8.3144621*3330.72/0.022897959)/(throat_A*1.15*math.sqrt((2/2.15)**(2.15/0.15)))/10**5
+    p_c = mass_flow*math.sqrt(combustion_T*s_gas_constant/gamma)/(throat_A*gamma*math.sqrt((2/(gamma+1))**((gamma+1)/(gamma-1))))/10**5
+    print("Combustion Chamber Pressure / bar:", p_c)
     return p_c
 
 def regressFuel(ox_flowRate):

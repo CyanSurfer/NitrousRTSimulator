@@ -21,6 +21,7 @@ import Regression as RG
 #Area in m**2
 #Specific gas constant in J kg^-1 K^-1
 #Critical Z = 0.28
+#Injector diameter in mm
 
 
 mass_v = 0
@@ -46,9 +47,10 @@ R=188.91
 time = 0
 time_step = 0.1
 
-K = 1.0
+K = 0.8 #1.0
 A_injector = 0
-N = 4
+injector_diameter = 1.75
+N = 1
 D_loss = 0
 
 burnout = False
@@ -76,8 +78,16 @@ def initialise():
 
         V_tank = float(input("Enter the Nitrous Tank Volume in litres:"))
 
-        if V_tank == None:
+        if V_tank <= 0:
             total_mass = float(input("Enter the Mass of Liquid Nitrous Oxide needed in kg:"))
+            
+            mass_l = total_mass/(1+density_v/density_l*(1/oxi_fill-1))
+            mass_v = total_mass - mass_l
+            print(mass_l, mass_v)
+            V_tank = mass_l/density_l + mass_v/density_v
+            
+            print("Total Volume with "+str(1-oxi_fill)+" ullage", V_tank*1000, "litres")
+            
         else:
 
             V_tank = V_tank/1000
@@ -88,7 +98,7 @@ def initialise():
             print("Total mass:", mass_v+mass_l)
 
 
-        A_injector = math.pi*10**(-6)
+        A_injector = math.pi*((injector_diameter/1000)**2)/4
         D_loss=K/(N*A_injector)**2
         #print("hello",D_loss)
         P_tank = NP.vapourPressure(temp)
@@ -100,6 +110,9 @@ def initialise():
         
         Error = True
 
+def injector_flowRate(C_d, A, density, P_manifold, P_injector):
+    
+    return C_d*A*math.sqrt(2*density*(P_manifold-P_injector)*10**5)
     
 
 def guessZ(Z_guess):
@@ -129,7 +142,8 @@ def loop():
     temp += deltaT
     density_v = NP.densityV(temp)
     density_l = NP.densityL(temp)
-    ml_dot = (2*density_l*(P_manifold-P_injector)*10**5/D_loss)**0.5
+    #ml_dot = (2*density_l*(P_manifold-P_injector)*10**5/D_loss)**0.5
+    ml_dot = injector_flowRate(K, A_injector, density_l, P_manifold, P_injector)
     rocketMass-=(ml_dot+RG.fuel_flowRate(RG.fuelRegression(RG.g_ox(ml_dot))))*time_step
     thrust = RG.getThrust(ml_dot)
     RG.regressFuel(ml_dot)
@@ -202,7 +216,8 @@ def vapourPhase():
     initial_vMass = mass_v
     
     
-    mv_dot = (2*density_v*(P_manifold-P_injector)*10**5/D_loss)**0.5
+    #mv_dot = (2*density_v*(P_manifold-P_injector)*10**5/D_loss)**0.5
+    mv_dot = injector_flowRate(K, A_injector, density_v, P_manifold, P_injector)
     rocketMass-= (mv_dot+RG.fuel_flowRate(RG.fuelRegression(RG.g_ox(mv_dot))))*time_step
     thrust = RG.getThrust(mv_dot)
     RG.regressFuel(mv_dot)
@@ -219,7 +234,8 @@ def vapourLoop():
     
     P_manifold=P_tank-P_loss
     # print("density",density_v,initial_vPressure,P_manifold, P_injector)
-    mv_dot = (2*density_v*(P_manifold-P_injector)*10**5/D_loss)**0.5
+    #mv_dot = (2*density_v*(P_manifold-P_injector)*10**5/D_loss)**0.5
+    mv_dot = injector_flowRate(K, A_injector, density_v, P_manifold, P_injector)
     rocketMass-= (mv_dot+RG.fuel_flowRate(RG.fuelRegression(RG.g_ox(mv_dot))))*time_step
     thrust = RG.getThrust(mv_dot)
     RG.regressFuel(mv_dot)
@@ -232,7 +248,7 @@ def vapourLoop():
     
     time+=time_step
 
-def plot(yVals, thrustPlot, rocket_mass):
+def plot(p_tank, thrustPlot, rocket_mass):
     
     rocket_vel = []
     altitude = []
@@ -242,7 +258,7 @@ def plot(yVals, thrustPlot, rocket_mass):
     xVals = pylab.array([x*time_step for x in range(0,round(time/time_step)+1)])
     rocket_vel = [0.0 for x in range(0,round(time/time_step)+1)]
     # print(len(xVals))
-    yVals = pylab.array(yVals)
+    p_tank = pylab.array(p_tank)
     
     
     # thrustPlot = pylab.array(thrustPlot)
@@ -283,7 +299,7 @@ def plot(yVals, thrustPlot, rocket_mass):
     fig.show()
     
     pylab.figure()
-    pylab.plot(xVals, yVals,"r+",label="RT_P")
+    pylab.plot(xVals, p_tank,"r+",label="RT_P")
     pylab.xlabel("Time/s")
     pylab.ylabel("Run Tank Pressure / bar")
     pylab.show()
@@ -307,7 +323,7 @@ def plot(yVals, thrustPlot, rocket_mass):
 
 def main():
     
-    yVals = []
+    p_tank = []
     thrustPlot = []
     temperature = []
     rocket_mass = []
@@ -321,7 +337,7 @@ def main():
         loop()
         if not Error:
             temperature.append(temp)
-            yVals.append(P_tank)
+            p_tank.append(P_tank)
             thrustPlot.append(thrust)
             rocket_mass.append(rocketMass)
         else:
@@ -330,7 +346,7 @@ def main():
     if not Error:
         vapourPhase()
         print("Initial vapour Mass",mass_v)
-        yVals.append(P_tank)
+        p_tank.append(P_tank)
         temperature.append(temp)
         thrustPlot.append(thrust)
         rocket_mass.append(rocketMass)
@@ -339,13 +355,13 @@ def main():
         #print(len(yVals))
         while mass_v>0.01:
             vapourLoop()
-            yVals.append(P_tank)
+            p_tank.append(P_tank)
             temperature.append(temp)
             thrustPlot.append(thrust)
             rocket_mass.append(rocketMass)
             print(RG.portR)
         
-        plot(yVals, thrustPlot, rocket_mass)
+        plot(p_tank, thrustPlot, rocket_mass)
     
     
 if __name__ == "__main__":    
